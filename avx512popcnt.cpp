@@ -7,7 +7,7 @@
 #include <random>
 #include <algorithm>
 
-#include "dump.cpp"
+#include "binary.cpp"
 
 
 enum Values {
