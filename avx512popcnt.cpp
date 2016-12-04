@@ -6,6 +6,7 @@
 #include <memory>
 #include <random>
 #include <algorithm>
+#include <bitset>
 
 #include "binary.cpp"
 
@@ -207,14 +208,14 @@ public:
             registers[i].set(EMPTY);
         }
 
+        for (unsigned i=0; i < shr_count; i++) {
+            shared[i].set(EMPTY);
+        }
+
         registers[ONES].set(ONES_STEP_0);
         registers[TWOS].set(TWOS_STEP_0);
         registers[FOURS].set(FOURS_STEP_0);
         registers[EIGHTS].set(EIGHTS_STEP_0);
-
-        for (unsigned i=0; i < shr_count; i++) {
-            shared[i].set(EMPTY);
-        }
     }
 };
 
@@ -647,13 +648,13 @@ public:
     }
 
 public:
-    bool execute(const std::vector<size_t>& shuffled) {
+    bool execute(const std::vector<size_t>& lookup) {
 
         const auto n  = program.size();
 
         for (size_t i = 0; i < n; i++) {
 
-            const size_t ip = shuffled[i];
+            const size_t ip = lookup[i];
 
             if (program[ip]->fullfills(state.back())) {
                 state.push_back(state.back());
@@ -674,10 +675,12 @@ public:
 class Generator {
 
     const Program& program;
+    std::vector<size_t> lookup;
+
     struct Item {
         State cpu;
-        std::vector<size_t> emitted;
-        std::vector<size_t> available;
+        size_t emitted_instruction;
+        std::bitset<143> available;
         size_t index;
     };
 
@@ -689,32 +692,33 @@ public:
 
         state.resize(prog.size() + 1);
 
-        state[0].cpu.init();
-
         for (size_t i=0; i < prog.size(); i++) {
-            state[0].available.push_back(i);
+            lookup.push_back(i);
         }
-
+        
+        state[0].cpu.init();
+        state[0].available.set();
         state[0].index = 0;
     }
 
 public:
     void execute(std::mt19937& gen) {
 
+        std::shuffle(lookup.begin(), lookup.end(), gen);
+
         size_t index = 0;
         size_t last_printed = 0;
-        std::shuffle(state[0].available.begin(), state[0].available.end(), gen);
 
         while (true) {
 
-            if (index > last_printed) {
+            if (true || index > last_printed) {
                 printf("index = %lu\n", index);
                 last_printed = index;
             }
 
-            if (try_advance(gen, index)) {
+            if (try_advance(index)) {
                 index += 1;
-                if (index == state.size()) {
+                if (index == program.size()) {
                     puts("THERE IS!!!");           
                     return;
                 }
@@ -725,23 +729,22 @@ public:
     }
 
 private:
-    bool try_advance(std::mt19937& gen, size_t index) {
+    bool try_advance(size_t index) {
     
         Item& current = state[index];
-
+    
         while (current.index < current.available.size()) {
 
-            const auto ip = current.available[current.index];
-            if (program.at(ip)->fullfills(current.cpu)) {
+            const auto ip = lookup[current.index];
+            if (current.available.test(ip) && program.at(ip)->fullfills(current.cpu)) {
 
                 Item& next = state.at(index + 1);
 
                 next = current;
 
                 next.index = 0;
-                next.emitted.push_back(ip);
-                next.available.erase(next.available.begin() + current.index);
-                std::shuffle(next.available.begin(), next.available.end(), gen);
+                next.emitted_instruction = ip;
+                next.available.reset(ip);
 
                 program[ip]->execute(next.cpu);
 
