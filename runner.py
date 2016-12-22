@@ -1,4 +1,5 @@
 import os
+import sys
 import stat
 import time
 
@@ -59,7 +60,8 @@ class Application:
                     continue
                 
                 processed = True
-                print "processing '%s'" % path
+                sys.stdout.write("processing '%s'" % path)
+                sys.stdout.flush()
                 oldpath = path
                 path = path + '.1'
                 os.rename(oldpath, path)
@@ -68,6 +70,7 @@ class Application:
                 md5sum = md5(bin).hexdigest()
                 if md5sum in self.status:
                     print "alredy checked"
+                    os.remove(path)
                     continue
 
                 bin_path = path
@@ -84,7 +87,7 @@ class Application:
                     self.status[md5sum] = False
                     print "failed"
                     os.rename(bin_path, join(self.output_invalid, dst_name + ".bin"))
-                    os.remove(res_path)
+                    os.rename(res_path, join(self.output_invalid, dst_name + ".result"))
 
                 # in either case remove executable, as it can be simply rebuilt
                 os.remove(exe_path)
