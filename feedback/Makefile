@@ -17,7 +17,7 @@ OBJECTS=tabulated_hamming_weight.o \
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $<
 
-basic_benchmark: basic_benchmark.c $(HEADERS) $(OBJECTS)
+basic_benchmark: basic_benchmark.c benchmark.h $(HEADERS) $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ basic_benchmark.c $(OBJECTS)
 
 clean:
