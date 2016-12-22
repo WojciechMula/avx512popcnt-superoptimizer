@@ -3,7 +3,7 @@
 .PHONY: all clean
 
 .SUFFIXES: .cpp .o .c .h
-CFLAGS = -fPIC -std=gnu99 -Wall -Wextra -Wshadow -mavx512f -march=native
+CFLAGS = -fPIC -std=gnu99 -Wall -Wextra -Wshadow -mavx512f -O3 -march=native
 
 all: basic_benchmark
 

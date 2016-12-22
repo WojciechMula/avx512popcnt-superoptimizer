@@ -1,26 +1,9 @@
-62 f1 fd 48 7f 29    	vmovdqa64 %zmm5,(%rcx)
-f3 4c 0f b8 01       	popcnt (%rcx),%r8
-f3 4c 0f b8 49 08    	popcnt 0x8(%rcx),%r9
-f3 4c 0f b8 51 10    	popcnt 0x10(%rcx),%r10
-f3 4c 0f b8 59 18    	popcnt 0x18(%rcx),%r11
-f3 4c 0f b8 61 20    	popcnt 0x20(%rcx),%r12
-f3 4c 0f b8 69 28    	popcnt 0x28(%rcx),%r13
-f3 4c 0f b8 71 30    	popcnt 0x30(%rcx),%r14
-f3 4c 0f b8 79 38    	popcnt 0x38(%rcx),%r15
-48 31 ff             	xor    %rdi,%rdi
-4c 01 c7             	add    %r8,%rdi
-4c 01 cf             	add    %r9,%rdi
-4c 01 d7             	add    %r10,%rdi
-4c 01 df             	add    %r11,%rdi
-4c 01 e7             	add    %r12,%rdi
-4c 01 ef             	add    %r13,%rdi
-4c 01 f7             	add    %r14,%rdi
-4c 01 ff             	add    %r15,%rdi
 62 61 fd 48 6f 30    	vmovdqa64 (%rax),%zmm30
 62 61 fd 48 6f 78 01 	vmovdqa64 0x40(%rax),%zmm31
 62 71 fd 48 6f d0    	vmovdqa64 %zmm0,%zmm10
 62 93 05 40 25 c6 96 	vpternlogd $0x96,%zmm30,%zmm31,%zmm0
 62 13 05 40 25 d6 e8 	vpternlogd $0xe8,%zmm30,%zmm31,%zmm10
+62 f1 fd 48 7f 29    	vmovdqa64 %zmm5,(%rcx)
 62 61 fd 48 6f 70 02 	vmovdqa64 0x80(%rax),%zmm30
 62 61 fd 48 6f 78 03 	vmovdqa64 0xc0(%rax),%zmm31
 62 71 fd 48 6f d8    	vmovdqa64 %zmm0,%zmm11
@@ -120,6 +103,23 @@ f3 4c 0f b8 79 38    	popcnt 0x38(%rcx),%r15
 62 61 fd 48 6f f1    	vmovdqa64 %zmm1,%zmm30
 62 93 35 40 25 c8 96 	vpternlogd $0x96,%zmm24,%zmm25,%zmm1
 62 03 35 40 25 c6 e8 	vpternlogd $0xe8,%zmm30,%zmm25,%zmm24
+f3 4c 0f b8 01       	popcnt (%rcx),%r8
+f3 4c 0f b8 49 08    	popcnt 0x8(%rcx),%r9
+f3 4c 0f b8 51 10    	popcnt 0x10(%rcx),%r10
+f3 4c 0f b8 59 18    	popcnt 0x18(%rcx),%r11
+f3 4c 0f b8 61 20    	popcnt 0x20(%rcx),%r12
+f3 4c 0f b8 69 28    	popcnt 0x28(%rcx),%r13
+f3 4c 0f b8 71 30    	popcnt 0x30(%rcx),%r14
+f3 4c 0f b8 79 38    	popcnt 0x38(%rcx),%r15
+48 31 ff             	xor    %rdi,%rdi
+4c 01 c7             	add    %r8,%rdi
+4c 01 cf             	add    %r9,%rdi
+4c 01 d7             	add    %r10,%rdi
+4c 01 df             	add    %r11,%rdi
+4c 01 e7             	add    %r12,%rdi
+4c 01 ef             	add    %r13,%rdi
+4c 01 f7             	add    %r14,%rdi
+4c 01 ff             	add    %r15,%rdi
 62 61 fd 48 6f f2    	vmovdqa64 %zmm2,%zmm30
 62 d3 1d 48 25 d2 96 	vpternlogd $0x96,%zmm10,%zmm12,%zmm2
 62 13 1d 48 25 d6 e8 	vpternlogd $0xe8,%zmm30,%zmm12,%zmm10

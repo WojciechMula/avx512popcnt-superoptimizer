@@ -8,6 +8,9 @@
 #include <algorithm>
 #include <bitset>
 
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "binary.cpp"
 
 
@@ -498,27 +501,12 @@ public:
     Program capture() {
 
         // popcnt from previous iteration
-        add<StoreSixteens>();
-        add<PopCount>(R0);
-        add<PopCount>(R1);
-        add<PopCount>(R2);
-        add<PopCount>(R3);
-        add<PopCount>(R4);
-        add<PopCount>(R5);
-        add<PopCount>(R6);
-        add<PopCount>(R7);
-        add<XorTotal>();
-        add<AddTotal>(R0);
-        add<AddTotal>(R1);
-        add<AddTotal>(R2);
-        add<AddTotal>(R3);
-        add<AddTotal>(R4);
-        add<AddTotal>(R5);
-        add<AddTotal>(R6);
-        add<AddTotal>(R7);
  
         // HS
         CSA_ones(ONES_STEP_0,  LOAD_0,  LOAD_1,  ONES_STEP_1,  ZMM10);
+
+        add<StoreSixteens>();
+
         CSA_ones(ONES_STEP_1,  LOAD_2,  LOAD_3,  ONES_STEP_2,  ZMM11);
         CSA_ones(ONES_STEP_2,  LOAD_4,  LOAD_5,  ONES_STEP_3,  ZMM12);
         CSA_ones(ONES_STEP_3,  LOAD_6,  LOAD_7,  ONES_STEP_4,  ZMM13);
@@ -544,6 +532,24 @@ public:
         CSA_twos(TWOS_STEP_6, ZMM22, ONES_STEP_13, ZMM23, ONES_STEP_14, TWOS_STEP_7);
         CSA_twos(TWOS_STEP_7, ZMM24, ONES_STEP_15, ZMM25, ONES_STEP_16, TWOS_STEP_8);
 
+        add<PopCount>(R0);
+        add<PopCount>(R1);
+        add<PopCount>(R2);
+        add<PopCount>(R3);
+        add<PopCount>(R4);
+        add<PopCount>(R5);
+        add<PopCount>(R6);
+        add<PopCount>(R7);
+        add<XorTotal>();
+        add<AddTotal>(R0);
+        add<AddTotal>(R1);
+        add<AddTotal>(R2);
+        add<AddTotal>(R3);
+        add<AddTotal>(R4);
+        add<AddTotal>(R5);
+        add<AddTotal>(R6);
+        add<AddTotal>(R7);
+
         CSA_fours(FOURS_STEP_0, ZMM10, TWOS_STEP_1, ZMM12, TWOS_STEP_2, FOURS_STEP_1);
         CSA_fours(FOURS_STEP_1, ZMM14, TWOS_STEP_3, ZMM16, TWOS_STEP_4, FOURS_STEP_2);
         CSA_fours(FOURS_STEP_2, ZMM18, TWOS_STEP_5, ZMM20, TWOS_STEP_6, FOURS_STEP_3);
@@ -563,7 +569,7 @@ private:
 
     template <typename T, typename... TA>
     void add(TA&&... args) {
-        const auto& opcode = bin.opcodes[prog.size()];
+        const auto& opcode = bin.program[prog.size()].opcode;
         prog.push_back(std::make_unique<T>(args...));
         prog.back()->set_opcode(opcode);
     }
@@ -689,15 +695,11 @@ public:
 public:
     void execute(std::mt19937& gen) {
 
-        size_t index = 0;
-        size_t last_printed = 0;
-
-
         size_t i = 0;
         size_t found = 0;
         while (true) {
             if (i % 65536 == 0) {
-                //printf("%d\n", i);
+                printf("%lu\n", i);
             }
             i++;
 
@@ -711,13 +713,27 @@ public:
             Simulator sim(program);
             if (sim.execute(lookup)) {
                 found += 1;
-                printf("%d after %d\n", found, i);
+                printf("%lu after %lu\n", found, i);
+                save_snapshot(found);
             } else {
                 t = lookup[a];
                 lookup[a] = lookup[b];
                 lookup[b] = t;
             }
         }
+    }
+
+    void save_snapshot(size_t i) {
+        static char path[512];
+
+        snprintf(path, sizeof(path), "0_generated/%d-%ld.bin", getpid(), i);
+        FILE* f = fopen(path, "wb");
+        for (size_t idx: lookup) {
+            const std::string& opcode = program[idx]->get_opcode();
+            fwrite(opcode.data(), opcode.size(), 1, f);
+        }
+
+        fclose(f);
     }
 };
 
@@ -730,7 +746,7 @@ int main() {
     
     Generator gen(prog);
     std::mt19937 g;
-    g.seed(2);
+    g.seed(1);
     gen.execute(g);
 
 #else

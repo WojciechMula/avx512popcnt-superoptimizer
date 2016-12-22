@@ -1,8 +1,20 @@
 PATTERN = """
+#include <vector>
+#include <string>
+
 class Binary {
 
-public: // XXX
-    std::vector<std::string> opcodes;
+    struct Instruction {
+        std::string opcode;
+        std::string bin;
+
+        Instruction(const char* opcode, const char* bin)
+            : opcode(opcode)
+            , bin(bin) {}
+    };
+
+public:
+    std::vector<Instruction> program;
     std::string blob;
 
 public:
@@ -33,8 +45,7 @@ with open('dump.asm') as f:
         bin    = ''.join(['\\x%s' % b for b in bin.split()])
         blob  += bin
 
-        #instructions.append(indent + 'opcodes.push_back("%s"); // %s' % (bin, opcode))
-        instructions.append(indent + 'opcodes.push_back("%s");' % (opcode))
+        instructions.append(indent + 'program.push_back(Instruction("%s", "%s"));' % (opcode, bin))
 
 instructions.append(indent + 'blob = "%s";' % blob)
 
