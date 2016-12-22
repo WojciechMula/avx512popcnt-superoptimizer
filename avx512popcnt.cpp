@@ -185,9 +185,13 @@ enum Registers {
     R7,
     TOTAL,
 
+    __reg_count__,
+
     // shared registers
     ZMM30 = 0,
-    ZMM31 = 1
+    ZMM31,
+
+    __shrreg_count__
 };
 
 
@@ -195,8 +199,8 @@ enum Registers {
 
 class State {
 
-    static const size_t reg_count = TOTAL;
-    static const size_t shr_count = 2;
+    static const size_t reg_count = __reg_count__;
+    static const size_t shr_count = __shrreg_count__;
 
 public:
     State() = default;
@@ -226,6 +230,7 @@ public:
 class Instruction {
     
     std::string opcode;
+    std::string bin;
 public:
     virtual bool fullfills(const State& state) const = 0;
     virtual void execute(State& state) = 0;
@@ -237,6 +242,14 @@ public:
 
     const std::string& get_opcode() const {
         return opcode;
+    }
+
+    void set_bin(const std::string& op) {
+        bin = op;
+    }
+
+    const std::string& get_bin() const {
+        return bin;
     }
 };
 
@@ -569,9 +582,10 @@ private:
 
     template <typename T, typename... TA>
     void add(TA&&... args) {
-        const auto& opcode = bin.program[prog.size()].opcode;
+        const auto& instr = bin.program[prog.size()];
         prog.push_back(std::make_unique<T>(args...));
-        prog.back()->set_opcode(opcode);
+        prog.back()->set_opcode(instr.opcode);
+        prog.back()->set_bin(instr.bin);
     }
 
 private:
@@ -654,7 +668,7 @@ public:
     }
 
 public:
-    bool execute(const std::vector<size_t>& lookup) {
+    bool execute(const std::vector<size_t>& lookup, bool verbose = false) {
 
         const auto n  = program.size();
 
@@ -666,13 +680,14 @@ public:
                 state.push_back(state.back());
                 program[ip]->execute(state.back());
             } else {
-                //printf("break at instruction %lu\n", ip);
-                //printf("opcode: %s\n", program[ip]->get_opcode().data());
+                if (verbose) {
+                    printf("break at instruction %lu\n", ip);
+                    printf("opcode: %s\n", program[ip]->get_opcode().data());
+                }
                 return false;
             }
         }
 
-        //puts("OK");
         return true;
     }
 };
@@ -697,16 +712,20 @@ public:
 
         size_t i = 0;
         size_t found = 0;
+        size_t a;
+        size_t b;
+        size_t t;
+
+        Simulator sim(program);
+        assert(sim.execute(lookup, true)); // be sure that the initial program is correct
+
         while (true) {
-            if (i % 65536 == 0) {
-                printf("%lu\n", i);
-            }
             i++;
 
-            const auto a = gen() % lookup.size();
-            const auto b = gen() % lookup.size();
+            a = gen() % lookup.size();
+            b = gen() % lookup.size();
 
-            auto t = lookup[a];
+            t = lookup[a];
             lookup[a] = lookup[b];
             lookup[b] = t;
 
@@ -715,6 +734,7 @@ public:
                 found += 1;
                 printf("%lu after %lu\n", found, i);
                 save_snapshot(found);
+                break;
             } else {
                 t = lookup[a];
                 lookup[a] = lookup[b];
@@ -729,7 +749,7 @@ public:
         snprintf(path, sizeof(path), "0_generated/%d-%ld.bin", getpid(), i);
         FILE* f = fopen(path, "wb");
         for (size_t idx: lookup) {
-            const std::string& opcode = program[idx]->get_opcode();
+            const std::string& opcode = program[idx]->get_bin();
             fwrite(opcode.data(), opcode.size(), 1, f);
         }
 
@@ -739,33 +759,22 @@ public:
 
 
 
-int main() {
+int main(int argc, char* argv[]) {
+
+    if (argc == 1) {
+        puts("usage: progam randseed");
+        return EXIT_FAILURE;
+    }
+
+    const uint64_t seed = atoi(argv[1]);
+    printf("using seed %lu\n", seed);
 
     Program prog = make_program();
-#if 1
-    
     Generator gen(prog);
+
     std::mt19937 g;
-    g.seed(1);
+    g.seed(seed);
+
     gen.execute(g);
-
-#else
-    std::vector<size_t> indices;
-    for (size_t i=0; i < prog.size(); i++) {
-        indices.push_back(i);
-    }
-
-    for (size_t j=0; j < 1000000; j++) {
-        std::mt19937 g;
-        g.seed(j);
-        std::vector<size_t> v(indices);
-        //std::shuffle(v.begin(), v.end(), g);
-
-        Simulator sim(prog);
-        if (sim.execute(v)) {
-            printf("j=%d\n", j);
-        }
-    }
-#endif
 }
 
