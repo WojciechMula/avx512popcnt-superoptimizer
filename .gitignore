@@ -1,2 +1,6 @@
 avx512popcnt
 binary.cpp
+
+0_generated
+1_valid
+2_invalid
