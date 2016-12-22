@@ -734,7 +734,7 @@ public:
                 found += 1;
                 printf("%lu after %lu\n", found, i);
                 save_snapshot(found);
-                break;
+                if (found > 100) break;
             } else {
                 t = lookup[a];
                 lookup[a] = lookup[b];
