@@ -677,85 +677,47 @@ class Generator {
     const Program& program;
     std::vector<size_t> lookup;
 
-    struct Item {
-        State cpu;
-        size_t emitted_instruction;
-        std::bitset<143> available;
-        size_t index;
-    };
-
-    std::vector<Item> state;
-
 public:
     Generator(const Program& prog)
         : program(prog) {
 
-        state.resize(prog.size() + 1);
-
-        for (size_t i=0; i < prog.size(); i++) {
+        for (size_t i=0; i < program.size(); i++) {
             lookup.push_back(i);
         }
-        
-        state[0].cpu.init();
-        state[0].available.set();
-        state[0].index = 0;
     }
 
 public:
     void execute(std::mt19937& gen) {
 
-        std::shuffle(lookup.begin(), lookup.end(), gen);
-
         size_t index = 0;
         size_t last_printed = 0;
 
+
+        size_t i = 0;
+        size_t found = 0;
         while (true) {
-
-            if (true || index > last_printed) {
-                printf("index = %lu\n", index);
-                last_printed = index;
+            if (i % 65536 == 0) {
+                //printf("%d\n", i);
             }
+            i++;
 
-            if (try_advance(index)) {
-                index += 1;
-                if (index == program.size()) {
-                    puts("THERE IS!!!");           
-                    return;
-                }
+            const auto a = gen() % lookup.size();
+            const auto b = gen() % lookup.size();
+
+            auto t = lookup[a];
+            lookup[a] = lookup[b];
+            lookup[b] = t;
+
+            Simulator sim(program);
+            if (sim.execute(lookup)) {
+                found += 1;
+                printf("%d after %d\n", found, i);
             } else {
-                index -= 1;
+                t = lookup[a];
+                lookup[a] = lookup[b];
+                lookup[b] = t;
             }
         }
-    }
-
-private:
-    bool try_advance(size_t index) {
-    
-        Item& current = state[index];
-    
-        while (current.index < current.available.size()) {
-
-            const auto ip = lookup[current.index];
-            if (current.available.test(ip) && program.at(ip)->fullfills(current.cpu)) {
-
-                Item& next = state.at(index + 1);
-
-                next = current;
-
-                next.index = 0;
-                next.emitted_instruction = ip;
-                next.available.reset(ip);
-
-                program[ip]->execute(next.cpu);
-
-                current.index++;
-                return true;
-            }
-
-            current.index++;
-        }
-
-        return false;
     }
 };
 
@@ -764,13 +726,14 @@ private:
 int main() {
 
     Program prog = make_program();
+#if 1
     
     Generator gen(prog);
     std::mt19937 g;
     g.seed(2);
     gen.execute(g);
 
-#if 0
+#else
     std::vector<size_t> indices;
     for (size_t i=0; i < prog.size(); i++) {
         indices.push_back(i);
@@ -780,7 +743,7 @@ int main() {
         std::mt19937 g;
         g.seed(j);
         std::vector<size_t> v(indices);
-        std::shuffle(v.begin(), v.end(), g);
+        //std::shuffle(v.begin(), v.end(), g);
 
         Simulator sim(prog);
         if (sim.execute(v)) {
