@@ -173,8 +173,6 @@ enum Registers {
     ZMM24,
     ZMM25,
 
-    ZMM_X,
-
     R0,
     R1,
     R2,
@@ -306,7 +304,41 @@ public:
 };
 
 
-class TernaryLogicFromShared: public Instruction {
+// vmovdqa64      %[ones], %%zmm10
+class CopyRegisterToShared: public Instruction {
+    int source;
+    int source_value;
+    int target;
+    int result;
+
+public:
+    CopyRegisterToShared(int src, int sv, int trg, int res)
+        : source(src)
+        , source_value(sv)
+        , target(trg)
+        , result(res) {}
+
+    virtual bool fullfills(const State& state) const override {
+        if (!state.shared[target].is_free()) {
+            return false;
+        }
+
+        if (!state.registers[source].is(source_value)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    virtual void execute(State& state) override {
+
+        state.shared[target].set(result);
+        state.shared[target].lock(1);
+    }
+};
+
+
+class TernaryLogicFromTwoShared: public Instruction {
     int src1;
     int src1_value;
 
@@ -319,7 +351,7 @@ class TernaryLogicFromShared: public Instruction {
     int result;
 
 public:
-    TernaryLogicFromShared(int src1, int src1_value, int src2, int src2_value, int target, int target_value, int result)
+    TernaryLogicFromTwoShared(int src1, int src1_value, int src2, int src2_value, int target, int target_value, int result)
         : src1(src1)
         , src1_value(src1_value)
         , src2(src2)
@@ -358,6 +390,57 @@ public:
         state.registers[target].set(result);
         state.shared[src1].release();
         state.shared[src2].release();
+    }
+};
+
+
+class TernaryLogicFromOneShared: public Instruction {
+    int src1;
+    int src1_value;
+
+    int src2;
+    int src2_value;
+
+    int target;
+    int target_value;
+
+    int result;
+
+public:
+    TernaryLogicFromOneShared(int src1, int src1_value, int src2, int src2_value, int target, int target_value, int result)
+        : src1(src1)
+        , src1_value(src1_value)
+        , src2(src2)
+        , src2_value(src2_value)
+        , target(target)
+        , target_value(target_value)
+        , result(result) {}
+
+    virtual bool fullfills(const State& state) const override {
+
+        if (state.shared[src1].is_free()) {
+            return false;
+        }
+
+        if (!state.shared[src1].is(src1_value)) {
+            return false;
+        }
+
+        if (!state.registers[src2].is(src2_value)) {
+            return false;
+        }
+
+        if (!state.registers[target].is(target_value)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    virtual void execute(State& state) override {
+
+        state.registers[target].set(result);
+        state.shared[src1].release();
     }
 };
 
@@ -599,38 +682,38 @@ private:
         add<LoadData>(ZMM30, loaded_value0);
         add<LoadData>(ZMM31, loaded_value1);
         add<CopyRegister>(ONES, source_value, target, source_value);
-        add<TernaryLogicFromShared>(ZMM30, loaded_value0, ZMM31, loaded_value1, ONES, source_value, target_value);
-        add<TernaryLogicFromShared>(ZMM30, loaded_value0, ZMM31, loaded_value1, target, source_value, target_value);
+        add<TernaryLogicFromTwoShared>(ZMM30, loaded_value0, ZMM31, loaded_value1, ONES, source_value, target_value);
+        add<TernaryLogicFromTwoShared>(ZMM30, loaded_value0, ZMM31, loaded_value1, target, source_value, target_value);
     }
 
-    // vmovdqa64      TWOS, ZMM_X
+    // vmovdqa64      TWOS, ZMM30
     // vpternlogd     $0x96, src1,  src2, TWOS
-    // vpternlogd     $0xe8, ZMM_X, src2, src1
+    // vpternlogd     $0xe8, ZMM30, src2, src1
     void CSA_twos(int twos_value, int src1, int src1_val, int src2, int src2_val, int target_value) {
         
-        add<CopyRegister>(TWOS, twos_value, ZMM_X, twos_value);
+        add<CopyRegisterToShared>(TWOS, twos_value, ZMM30, twos_value);
         add<TernaryLogic>(src1,  src1_val,   src2, src2_val, TWOS, twos_value, target_value);
-        add<TernaryLogic>(ZMM_X, twos_value, src2, src2_val, src1, src1_val,   target_value);
+        add<TernaryLogicFromOneShared>(ZMM30, twos_value, src2, src2_val, src1, src1_val,   target_value);
     }
 
-    // vmovdqa64      FOURS, ZMM_X
+    // vmovdqa64      FOURS, ZMM30
     // vpternlogd     $0x96, src1,  src2, FOURS
-    // vpternlogd     $0xe8, ZMM_X, src2, src1
+    // vpternlogd     $0xe8, ZMM30, src2, src1
     void CSA_fours(int fours_value, int src1, int src1_val, int src2, int src2_val, int target_value) {
         
-        add<CopyRegister>(FOURS, fours_value, ZMM_X, fours_value);
+        add<CopyRegisterToShared>(FOURS, fours_value, ZMM30, fours_value);
         add<TernaryLogic>(src1,  src1_val,    src2, src2_val, FOURS, fours_value, target_value);
-        add<TernaryLogic>(ZMM_X, fours_value, src2, src2_val, src1,  src1_val,    target_value);
+        add<TernaryLogicFromOneShared>(ZMM30, fours_value, src2, src2_val, src1,  src1_val,    target_value);
     }
 
-    // vmovdqa64      EIGHTS, ZMM_X
+    // vmovdqa64      EIGHTS, ZMM30
     // vpternlogd     $0x96, src1,  src2, EIGHTS
     // vpternlogd     $0xe8, ZMM_X, src2, src1
     void CSA_eights(int eights_value, int src1, int src1_val, int src2, int src2_val, int target_value) {
         
-        add<CopyRegister>(EIGHTS, eights_value, ZMM_X, eights_value);
+        add<CopyRegisterToShared>(EIGHTS, eights_value, ZMM30, eights_value);
         add<TernaryLogic>(src1,  src1_val,     src2, src2_val, EIGHTS, eights_value, target_value);
-        add<TernaryLogic>(ZMM_X, eights_value, src2, src2_val, src1,   src1_val,     target_value);
+        add<TernaryLogicFromOneShared>(ZMM30, eights_value, src2, src2_val, src1,   src1_val,     target_value);
     }
 
 };
