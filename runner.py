@@ -60,7 +60,7 @@ class Application:
                     continue
                 
                 processed = True
-                sys.stdout.write("processing '%s'" % path)
+                sys.stdout.write("processing '%s'..." % path)
                 sys.stdout.flush()
                 oldpath = path
                 path = path + '.1'
@@ -89,7 +89,7 @@ class Application:
                     os.rename(bin_path, join(self.output_invalid, dst_name + ".bin"))
                     os.rename(res_path, join(self.output_invalid, dst_name + ".result"))
 
-                # in either case remove executable, as it can be simply rebuilt
+                # in either case remove the executable, as it can be simply rebuilt
                 os.remove(exe_path)
 
 
