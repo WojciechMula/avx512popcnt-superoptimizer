@@ -1,0 +1,13 @@
+size = 512 words or 4096 bytes 
+rdtsc_overhead set to 39
+avx512f_harley_seal__hardware_popcnt_2(prec, size)          	:  0.76 cycles per operation (best) 	0.77 cycles per operation (avg) 
+
+size = 1024 words or 8192 bytes 
+avx512f_harley_seal__hardware_popcnt_2(prec, size)          	:  0.52 cycles per operation (best) 	0.53 cycles per operation (avg) 
+
+size = 4096 words or 32768 bytes 
+avx512f_harley_seal__hardware_popcnt_2(prec, size)          	:  0.36 cycles per operation (best) 	0.36 cycles per operation (avg) 
+
+size = 8192 words or 65536 bytes 
+avx512f_harley_seal__hardware_popcnt_2(prec, size)          	:  0.32 cycles per operation (best) 	0.33 cycles per operation (avg) 
+
