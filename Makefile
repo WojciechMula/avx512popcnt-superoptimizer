@@ -1,3 +1,5 @@
+.PHONY: clean
+
 FLAGS=-Wall -Wextra -pedantic -std=c++14 -O3
 
 all: avx512popcnt
@@ -8,3 +10,6 @@ avx512popcnt: avx512popcnt.cpp binary.cpp
 
 binary.cpp: dump.asm py/dump2cpp.py
 	python py/dump2cpp.py > binary.cpp
+
+clean:
+	$(RM) avx512popcnt
